@@ -1,5 +1,5 @@
 use std::env;
-use std::{fs::{self, File}, io::{BufRead, BufReader}};
+use std::{fs::{self, File}, io::{BufRead, BufReader, Read}};
 use std::process::ExitCode;
 use std::collections::HashSet;
 
@@ -7,6 +7,7 @@ use std::collections::HashSet;
 enum Option {
     NumBytes,
     NumLines,
+    NumWords,
 }
 
 fn main() -> ExitCode {
@@ -32,6 +33,14 @@ fn main() -> ExitCode {
             }
         }
 
+        if options.contains(&Option::NumWords) {
+            if let Ok(count) = handle_word_count(&filename) {
+                print!("{} ", count);
+            } else {
+                status = 1;
+            }
+        }
+
         println!("{}", filename)
     }
 
@@ -49,6 +58,8 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
                 option_result.insert(Option::NumBytes);
             } else if *arg == String::from("-l") {
                 option_result.insert(Option::NumLines);
+            } else if *arg == String::from("-w") {
+                option_result.insert(Option::NumWords);
             }
             else {
                 parsing_options = false;
@@ -73,6 +84,15 @@ fn handle_byte_count(filename: &String) -> Result<u64, String> {
 fn handle_line_count(filename: &String) -> Result<u64, String> {
     if let Ok(file) = File::open(filename) {
         return Ok(BufReader::new(file).lines().count() as u64);
+    }
+    return Err(String::from("Fail"));
+}
+
+fn handle_word_count(filename: &String) -> Result<u64, String> {
+    if let Ok(file) = File::open(filename) {
+        let mut s = String::new();
+        _ = BufReader::new(file).read_to_string(&mut s);
+        return Ok(s.split_whitespace().count() as u64);
     }
     return Err(String::from("Fail"));
 }
