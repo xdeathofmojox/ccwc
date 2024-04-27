@@ -1,5 +1,5 @@
 use std::env;
-use std::{fs::{self, File}, io::{BufRead, BufReader, Read}};
+use std::{fs::File, io::{BufRead, BufReader, Read, Seek}};
 use std::process::ExitCode;
 use std::collections::HashSet;
 
@@ -8,6 +8,7 @@ enum Option {
     NumBytes,
     NumLines,
     NumWords,
+    NumCharacters,
 }
 
 fn main() -> ExitCode {
@@ -16,32 +17,34 @@ fn main() -> ExitCode {
     let mut status = 0;
 
     for filename in filenames {
-        print!("  ");
-        if options.contains(&Option::NumBytes) {
-            if let Ok(count) = handle_byte_count(&filename) {
-                print!("{} ", count);
-            } else {
-                status = 1;
-            }
-        }
+        if let Ok(file) = File::open(&filename) {
+            let mut reader = BufReader::new(file);
 
-        if options.contains(&Option::NumLines) {
-            if let Ok(count) = handle_line_count(&filename) {
-                print!("{} ", count);
-            } else {
-                status = 1;
+            print!("  ");
+            if options.contains(&Option::NumBytes) {
+                print!("{} ", handle_byte_count(&mut reader));
+                let _ = reader.rewind();
             }
-        }
-
-        if options.contains(&Option::NumWords) {
-            if let Ok(count) = handle_word_count(&filename) {
-                print!("{} ", count);
-            } else {
-                status = 1;
+    
+            if options.contains(&Option::NumLines) {
+                print!("{} ", handle_line_count(&mut reader));
+                let _ = reader.rewind();
             }
+    
+            if options.contains(&Option::NumWords) {
+                print!("{} ", handle_word_count(&mut reader));
+                let _ = reader.rewind();
+            }
+    
+            if options.contains(&Option::NumCharacters) {
+                print!("{} ", handle_character_count(&mut reader));
+                let _ = reader.rewind();
+            }
+    
+            println!("{}", filename)
+        } else {
+            status = 1;
         }
-
-        println!("{}", filename)
     }
 
     ExitCode::from(status)
@@ -60,6 +63,8 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
                 option_result.insert(Option::NumLines);
             } else if *arg == String::from("-w") {
                 option_result.insert(Option::NumWords);
+            } else if *arg == String::from("-m") {
+                option_result.insert(Option::NumCharacters);
             }
             else {
                 parsing_options = false;
@@ -74,25 +79,22 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
     (option_result, file_result)
 }
 
-fn handle_byte_count(filename: &String) -> Result<u64, String> {
-    if let Ok(metadata) = fs::metadata(filename.clone()) {
-        return Ok(metadata.len());
-    }
-    return Err(String::from("Fail"));
+fn handle_byte_count<R: BufRead>(reader: &mut R) -> usize {
+    reader.bytes().count()
 }
 
-fn handle_line_count(filename: &String) -> Result<u64, String> {
-    if let Ok(file) = File::open(filename) {
-        return Ok(BufReader::new(file).lines().count() as u64);
-    }
-    return Err(String::from("Fail"));
+fn handle_line_count<R: BufRead>(reader: &mut R) -> usize {
+    reader.lines().count()
 }
 
-fn handle_word_count(filename: &String) -> Result<u64, String> {
-    if let Ok(file) = File::open(filename) {
-        let mut s = String::new();
-        _ = BufReader::new(file).read_to_string(&mut s);
-        return Ok(s.split_whitespace().count() as u64);
-    }
-    return Err(String::from("Fail"));
+fn handle_word_count<R: BufRead>(reader: &mut R) -> usize {
+    let mut s = String::new();
+    let _ = reader.read_to_string(&mut s);
+    s.split_whitespace().count()
+}
+
+fn handle_character_count<R: BufRead>(reader: &mut R) -> usize {
+    let mut s = String::new();
+    let _ = reader.read_to_string(&mut s);
+    s.chars().count()
 }
