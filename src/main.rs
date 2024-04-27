@@ -20,28 +20,27 @@ fn main() -> ExitCode {
         if let Ok(file) = File::open(&filename) {
             let mut reader = BufReader::new(file);
 
-            print!("  ");
-            if options.contains(&Option::NumBytes) {
-                print!("{} ", handle_byte_count(&mut reader));
-                let _ = reader.rewind();
-            }
-    
             if options.contains(&Option::NumLines) {
-                print!("{} ", handle_line_count(&mut reader));
+                print!(" {:>7}", handle_line_count(&mut reader));
                 let _ = reader.rewind();
             }
     
             if options.contains(&Option::NumWords) {
-                print!("{} ", handle_word_count(&mut reader));
+                print!(" {:>7}", handle_word_count(&mut reader));
+                let _ = reader.rewind();
+            }
+
+            if options.contains(&Option::NumBytes) {
+                print!(" {:>7}", handle_byte_count(&mut reader));
                 let _ = reader.rewind();
             }
     
             if options.contains(&Option::NumCharacters) {
-                print!("{} ", handle_character_count(&mut reader));
+                print!(" {:>7}", handle_character_count(&mut reader));
                 let _ = reader.rewind();
             }
     
-            println!("{}", filename)
+            println!(" {}", filename)
         } else {
             status = 1;
         }
@@ -58,12 +57,14 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
     for arg in args {
         if parsing_options {
             if *arg == String::from("-c") {
+                option_result.remove(&Option::NumCharacters);
                 option_result.insert(Option::NumBytes);
             } else if *arg == String::from("-l") {
                 option_result.insert(Option::NumLines);
             } else if *arg == String::from("-w") {
                 option_result.insert(Option::NumWords);
             } else if *arg == String::from("-m") {
+                option_result.remove(&Option::NumBytes);
                 option_result.insert(Option::NumCharacters);
             }
             else {
