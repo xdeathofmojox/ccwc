@@ -1,30 +1,41 @@
 use std::env;
-use std::fs;
+use std::{fs::{self, File}, io::{BufRead, BufReader}};
 use std::process::ExitCode;
 use std::collections::HashSet;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 enum Option {
-    NumBytes
+    NumBytes,
+    NumLines,
 }
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
-    let mut success = false;
     let (options, filenames) = parse_args(args);
+    let mut status = 0;
 
-    if options.contains(&Option::NumBytes) {
-        for filename in filenames {
-            if let Ok(metadata) = fs::metadata(filename.clone()) {
-                println!("  {} {}", metadata.len(), filename);
-                success = true;
+    for filename in filenames {
+        print!("  ");
+        if options.contains(&Option::NumBytes) {
+            if let Ok(count) = handle_byte_count(&filename) {
+                print!("{} ", count);
             } else {
-                return ExitCode::from(1);
+                status = 1;
             }
         }
+
+        if options.contains(&Option::NumLines) {
+            if let Ok(count) = handle_line_count(&filename) {
+                print!("{} ", count);
+            } else {
+                status = 1;
+            }
+        }
+
+        println!("{}", filename)
     }
 
-    ExitCode::from(if success { 0 } else { 1 })
+    ExitCode::from(status)
 }
 
 fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
@@ -36,7 +47,10 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
         if parsing_options {
             if *arg == String::from("-c") {
                 option_result.insert(Option::NumBytes);
-            } else {
+            } else if *arg == String::from("-l") {
+                option_result.insert(Option::NumLines);
+            }
+            else {
                 parsing_options = false;
             }
         }
@@ -47,4 +61,18 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
     }
 
     (option_result, file_result)
+}
+
+fn handle_byte_count(filename: &String) -> Result<u64, String> {
+    if let Ok(metadata) = fs::metadata(filename.clone()) {
+        return Ok(metadata.len());
+    }
+    return Err(String::from("Fail"));
+}
+
+fn handle_line_count(filename: &String) -> Result<u64, String> {
+    if let Ok(file) = File::open(filename) {
+        return Ok(BufReader::new(file).lines().count() as u64);
+    }
+    return Err(String::from("Fail"));
 }
