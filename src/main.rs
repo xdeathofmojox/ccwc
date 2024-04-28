@@ -1,5 +1,5 @@
 use std::env;
-use std::{fs::File, io::{BufRead, BufReader}};
+use std::{fs::File, io::{self, BufRead, BufReader}};
 use std::process::{self, ExitCode};
 use std::collections::HashSet;
 
@@ -16,28 +16,19 @@ fn main() -> ExitCode {
     let (options, filenames) = parse_args(args);
     let mut status = 0;
 
+    if filenames.is_empty() {
+        let stdin = io::stdin();
+        let result = handle_counts(&mut stdin.lock(), &options);
+        print_output(&options, result);
+        println!();
+    }
+
     for filename in filenames {
         if let Ok(file) = File::open(&filename) {
             let mut reader = BufReader::new(file);
-            let (num_bytes, num_lines, num_words, num_chars) = handle_counts(&mut reader, &options);
-
-            if options.contains(&Option::Lines) {
-                print!(" {:>7}", num_lines);
-            }
-    
-            if options.contains(&Option::Words) {
-                print!(" {:>7}", num_words);
-            }
-
-            if options.contains(&Option::Bytes) {
-                print!(" {:>7}", num_bytes);
-            }
-    
-            if options.contains(&Option::Characters) {
-                print!(" {:>7}", num_chars);
-            }
-    
-            println!(" {}", filename)
+            let result = handle_counts(&mut reader, &options);
+            print_output(&options, result);
+            println!(" {}", filename);
         } else {
             println!("ccwc: {}: No such file or directory", filename);
             status = 1;
@@ -45,6 +36,24 @@ fn main() -> ExitCode {
     }
 
     ExitCode::from(status)
+}
+
+fn print_output(options: &HashSet<Option>, (num_bytes, num_lines, num_words, num_chars): (usize, usize, usize, usize)) {
+    if options.contains(&Option::Lines) {
+        print!(" {:>7}", num_lines);
+    }
+
+    if options.contains(&Option::Words) {
+        print!(" {:>7}", num_words);
+    }
+
+    if options.contains(&Option::Bytes) {
+        print!(" {:>7}", num_bytes);
+    }
+
+    if options.contains(&Option::Characters) {
+        print!(" {:>7}", num_chars);
+    }
 }
 
 fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
