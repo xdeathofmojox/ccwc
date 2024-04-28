@@ -1,14 +1,14 @@
 use std::env;
-use std::{fs::File, io::{BufRead, BufReader, Read, Seek}};
+use std::{fs::File, io::{BufRead, BufReader}};
 use std::process::ExitCode;
 use std::collections::HashSet;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 enum Option {
-    NumBytes,
-    NumLines,
-    NumWords,
-    NumCharacters,
+    Bytes,
+    Lines,
+    Words,
+    Characters,
 }
 
 fn main() -> ExitCode {
@@ -19,25 +19,22 @@ fn main() -> ExitCode {
     for filename in filenames {
         if let Ok(file) = File::open(&filename) {
             let mut reader = BufReader::new(file);
+            let (num_bytes, num_lines, num_words, num_chars) = handle_counts(&mut reader, &options);
 
-            if options.contains(&Option::NumLines) {
-                print!(" {:>7}", handle_line_count(&mut reader));
-                let _ = reader.rewind();
+            if options.contains(&Option::Lines) {
+                print!(" {:>7}", num_lines);
             }
     
-            if options.contains(&Option::NumWords) {
-                print!(" {:>7}", handle_word_count(&mut reader));
-                let _ = reader.rewind();
+            if options.contains(&Option::Words) {
+                print!(" {:>7}", num_words);
             }
 
-            if options.contains(&Option::NumBytes) {
-                print!(" {:>7}", handle_byte_count(&mut reader));
-                let _ = reader.rewind();
+            if options.contains(&Option::Bytes) {
+                print!(" {:>7}", num_bytes);
             }
     
-            if options.contains(&Option::NumCharacters) {
-                print!(" {:>7}", handle_character_count(&mut reader));
-                let _ = reader.rewind();
+            if options.contains(&Option::Characters) {
+                print!(" {:>7}", num_chars);
             }
     
             println!(" {}", filename)
@@ -57,15 +54,15 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
     for arg in args {
         if parsing_options {
             if *arg == String::from("-c") {
-                option_result.remove(&Option::NumCharacters);
-                option_result.insert(Option::NumBytes);
+                option_result.remove(&Option::Characters);
+                option_result.insert(Option::Bytes);
             } else if *arg == String::from("-l") {
-                option_result.insert(Option::NumLines);
+                option_result.insert(Option::Lines);
             } else if *arg == String::from("-w") {
-                option_result.insert(Option::NumWords);
+                option_result.insert(Option::Words);
             } else if *arg == String::from("-m") {
-                option_result.remove(&Option::NumBytes);
-                option_result.insert(Option::NumCharacters);
+                option_result.remove(&Option::Bytes);
+                option_result.insert(Option::Characters);
             }
             else {
                 parsing_options = false;
@@ -73,29 +70,37 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
         }
 
         if !parsing_options {
-            file_result.push(String::from(arg));
+            file_result.push(arg);
         }
     }
 
     (option_result, file_result)
 }
 
-fn handle_byte_count<R: BufRead>(reader: &mut R) -> usize {
-    reader.bytes().count()
-}
-
-fn handle_line_count<R: BufRead>(reader: &mut R) -> usize {
-    reader.lines().count()
-}
-
-fn handle_word_count<R: BufRead>(reader: &mut R) -> usize {
+fn handle_counts<R: BufRead>(reader: &mut R, options: &HashSet<Option>) -> (usize, usize, usize, usize) {
     let mut s = String::new();
-    let _ = reader.read_to_string(&mut s);
-    s.split_whitespace().count()
-}
+    let mut byte_count: usize = 0;
+    let mut line_count: usize = 0;
+    let mut word_count: usize = 0;
+    let mut char_count: usize = 0;
+    while let Ok(size) = reader.read_line(&mut s) {
+        if size == 0 {
+            break;
+        }
 
-fn handle_character_count<R: BufRead>(reader: &mut R) -> usize {
-    let mut s = String::new();
-    let _ = reader.read_to_string(&mut s);
-    s.chars().count()
+        if options.contains(&Option::Bytes) {
+            byte_count += size;
+        }
+        if options.contains(&Option::Lines) {
+            line_count += 1;
+        }
+        if options.contains(&Option::Words) {
+            word_count += s.split_whitespace().count();
+        }
+        if options.contains(&Option::Characters) {
+            char_count += s.chars().count();
+        }
+        s.clear();
+    }
+    (byte_count, line_count, word_count, char_count)
 }
