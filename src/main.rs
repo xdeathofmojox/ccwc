@@ -1,6 +1,6 @@
 use std::env;
 use std::{fs::File, io::{BufRead, BufReader}};
-use std::process::ExitCode;
+use std::process::{self, ExitCode};
 use std::collections::HashSet;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -53,19 +53,10 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
     let mut parsing_options = true;
     for arg in args {
         if parsing_options {
-            if *arg == String::from("-c") {
-                option_result.remove(&Option::Characters);
-                option_result.insert(Option::Bytes);
-            } else if *arg == String::from("-l") {
-                option_result.insert(Option::Lines);
-            } else if *arg == String::from("-w") {
-                option_result.insert(Option::Words);
-            } else if *arg == String::from("-m") {
-                option_result.remove(&Option::Bytes);
-                option_result.insert(Option::Characters);
-            }
-            else {
-                parsing_options = false;
+            if let Ok(continue_parsing) = parse_arg(&arg, &mut option_result) {
+                parsing_options = continue_parsing;
+            } else {
+                process::exit(1);
             }
         }
 
@@ -75,6 +66,41 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
     }
 
     (option_result, file_result)
+}
+
+fn parse_arg(arg: &String, options: &mut HashSet<Option>) -> Result<bool, String> {
+    let mut arg_chars = arg.chars();
+    if let Some(starting_arg_char) = arg_chars.nth(0) {
+        if starting_arg_char == '-' {
+            for arg_char in arg_chars {
+                match arg_char {
+                    'c' => {
+                        options.remove(&Option::Characters);
+                        options.insert(Option::Bytes);
+                    },
+                    'l' => {
+                        options.insert(Option::Lines);
+                    },
+                    'w' => {
+                        options.insert(Option::Words);
+                    },
+                    'm' => {
+                        options.remove(&Option::Bytes);
+                        options.insert(Option::Characters);
+                    },
+                    x => {
+                        println!("cwwc: illegal option -- {}", x);
+                        return Err(String::from("Illegal Option"));
+                    }
+                }
+            }
+        } else {
+            return Ok(false);
+        }
+        return Ok(true);
+    } else {
+        return Ok(false);
+    }
 }
 
 fn handle_counts<R: BufRead>(reader: &mut R, options: &HashSet<Option>) -> (usize, usize, usize, usize) {
