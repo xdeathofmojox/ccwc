@@ -66,6 +66,12 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
         }
     }
 
+    if option_result.is_empty() {
+        option_result.insert(Option::Bytes);
+        option_result.insert(Option::Lines);
+        option_result.insert(Option::Words);
+    }
+
     (option_result, file_result)
 }
 
