@@ -39,6 +39,7 @@ fn main() -> ExitCode {
     
             println!(" {}", filename)
         } else {
+            println!("ccwc: {}: No such file or directory", filename);
             status = 1;
         }
     }
