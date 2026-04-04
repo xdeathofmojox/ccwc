@@ -1,7 +1,10 @@
-use std::env;
-use std::{fs::File, io::{self, BufRead, BufReader}};
-use std::process::{self, ExitCode};
 use std::collections::HashSet;
+use std::env;
+use std::process::{self, ExitCode};
+use std::{
+    fs::File,
+    io::{self, BufRead, BufReader},
+};
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 enum Option {
@@ -38,7 +41,10 @@ fn main() -> ExitCode {
     ExitCode::from(status)
 }
 
-fn print_output(options: &HashSet<Option>, (num_bytes, num_lines, num_words, num_chars): (usize, usize, usize, usize)) {
+fn print_output(
+    options: &HashSet<Option>,
+    (num_bytes, num_lines, num_words, num_chars): (usize, usize, usize, usize),
+) {
     if options.contains(&Option::Lines) {
         print!(" {:>7}", num_lines);
     }
@@ -84,26 +90,26 @@ fn parse_args(args: Vec<String>) -> (HashSet<Option>, Vec<String>) {
     (option_result, file_result)
 }
 
-fn parse_arg(arg: &String, options: &mut HashSet<Option>) -> Result<bool, String> {
+fn parse_arg(arg: &str, options: &mut HashSet<Option>) -> Result<bool, String> {
     let mut arg_chars = arg.chars();
-    if let Some(starting_arg_char) = arg_chars.nth(0) {
+    if let Some(starting_arg_char) = arg_chars.next() {
         if starting_arg_char == '-' {
             for arg_char in arg_chars {
                 match arg_char {
                     'c' => {
                         options.remove(&Option::Characters);
                         options.insert(Option::Bytes);
-                    },
+                    }
                     'l' => {
                         options.insert(Option::Lines);
-                    },
+                    }
                     'w' => {
                         options.insert(Option::Words);
-                    },
+                    }
                     'm' => {
                         options.remove(&Option::Bytes);
                         options.insert(Option::Characters);
-                    },
+                    }
                     x => {
                         println!("cwwc: illegal option -- {}", x);
                         return Err(String::from("Illegal Option"));
@@ -113,13 +119,16 @@ fn parse_arg(arg: &String, options: &mut HashSet<Option>) -> Result<bool, String
         } else {
             return Ok(false);
         }
-        return Ok(true);
+        Ok(true)
     } else {
-        return Ok(false);
+        Ok(false)
     }
 }
 
-fn handle_counts<R: BufRead>(reader: &mut R, options: &HashSet<Option>) -> (usize, usize, usize, usize) {
+fn handle_counts<R: BufRead>(
+    reader: &mut R,
+    options: &HashSet<Option>,
+) -> (usize, usize, usize, usize) {
     let mut s = String::new();
     let mut byte_count: usize = 0;
     let mut line_count: usize = 0;
@@ -145,4 +154,54 @@ fn handle_counts<R: BufRead>(reader: &mut R, options: &HashSet<Option>) -> (usiz
         s.clear();
     }
     (byte_count, line_count, word_count, char_count)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn counts(input: &str, flags: &str) -> (usize, usize, usize, usize) {
+        let (options, _) = parse_args(flags.split_whitespace().map(String::from).collect());
+        handle_counts(&mut input.as_bytes(), &options)
+    }
+
+    #[test]
+    fn default_flags_count_lines_words_bytes() {
+        let (bytes, lines, words, _) = counts("hello world\nfoo bar\n", "");
+        assert_eq!(lines, 2);
+        assert_eq!(words, 4);
+        assert_eq!(bytes, 20);
+    }
+
+    #[test]
+    fn flag_c_counts_bytes() {
+        let (bytes, _, _, _) = counts("hello\n", "-c");
+        assert_eq!(bytes, 6);
+    }
+
+    #[test]
+    fn flag_l_counts_lines() {
+        let (_, lines, _, _) = counts("a\nb\nc\n", "-l");
+        assert_eq!(lines, 3);
+    }
+
+    #[test]
+    fn flag_w_counts_words() {
+        let (_, _, words, _) = counts("one two three\n", "-w");
+        assert_eq!(words, 3);
+    }
+
+    #[test]
+    fn flag_m_counts_chars() {
+        let (_, _, _, chars) = counts("héllo\n", "-m");
+        assert_eq!(chars, 6); // 5 chars + newline
+    }
+
+    #[test]
+    fn empty_input() {
+        let (bytes, lines, words, _) = counts("", "");
+        assert_eq!(bytes, 0);
+        assert_eq!(lines, 0);
+        assert_eq!(words, 0);
+    }
 }
