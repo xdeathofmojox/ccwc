@@ -11,7 +11,7 @@
     {
       packages = {
         default = craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
-        ccwc = craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
+        cc-wc = craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
       };
       legacyPackages = pkgs;
     };
