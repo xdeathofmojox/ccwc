@@ -3,6 +3,7 @@ use std::io::BufRead;
 
 use crate::flag::Flag;
 
+#[derive(Default)]
 pub struct Counts {
     pub bytes: usize,
     pub lines: usize,
@@ -11,31 +12,15 @@ pub struct Counts {
 }
 
 pub fn count<R: BufRead>(reader: &mut R, flags: &HashSet<Flag>) -> Counts {
-    let mut counts = Counts {
-        bytes: 0,
-        lines: 0,
-        words: 0,
-        chars: 0,
-    };
+    let mut counts = Counts::default();
     let mut line = String::new();
 
-    while let Ok(n) = reader.read_line(&mut line) {
-        if n == 0 {
+    while let Ok(num_bytes) = reader.read_line(&mut line) {
+        if num_bytes == 0 {
             break;
         }
-        if flags.contains(&Flag::Bytes) {
-            counts.bytes += n;
-        }
-        if flags.contains(&Flag::Lines) {
-            counts.lines += 1;
-        }
-        if flags.contains(&Flag::Words) {
-            counts.words += line.split_whitespace().count();
-        }
-        if flags.contains(&Flag::Characters) {
-            counts.chars += line.chars().count();
-        }
-        line.clear();
+
+        process_line(&mut line, num_bytes, &mut counts, flags);
     }
 
     counts
@@ -54,6 +39,22 @@ pub fn print_counts(flags: &HashSet<Flag>, counts: &Counts) {
     if flags.contains(&Flag::Characters) {
         print!(" {:>7}", counts.chars);
     }
+}
+
+fn process_line(line: &mut String, num_bytes: usize, counts: &mut Counts, flags: &HashSet<Flag>) {
+    if flags.contains(&Flag::Bytes) {
+        counts.bytes += num_bytes;
+    }
+    if flags.contains(&Flag::Lines) {
+        counts.lines += 1;
+    }
+    if flags.contains(&Flag::Words) {
+        counts.words += line.split_whitespace().count();
+    }
+    if flags.contains(&Flag::Characters) {
+        counts.chars += line.chars().count();
+    }
+    line.clear();
 }
 
 #[cfg(test)]
