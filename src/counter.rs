@@ -1,0 +1,145 @@
+use std::collections::HashSet;
+use std::io::{BufRead, Read};
+
+use crate::flag::Flag;
+
+const BYTES_BUF_SIZE: usize = 64 * 1024;
+
+#[derive(Default)]
+pub struct Counts {
+    pub bytes: usize,
+    pub lines: usize,
+    pub words: usize,
+    pub chars: usize,
+}
+
+pub fn count<R: BufRead>(reader: &mut R, flags: &HashSet<Flag>) -> Counts {
+    if flags.len() == 1 && flags.contains(&Flag::Bytes) {
+        return count_bytes_only(reader);
+    }
+
+    let active = ActiveFlags::from(flags);
+    let mut counts = Counts::default();
+    let mut line = String::new();
+
+    while let Ok(num_bytes) = reader.read_line(&mut line) {
+        if num_bytes == 0 {
+            break;
+        }
+
+        process_line(&mut line, num_bytes, &mut counts, &active);
+    }
+
+    counts
+}
+
+fn count_bytes_only<R: Read>(reader: &mut R) -> Counts {
+    let mut counts = Counts::default();
+    let mut buf = [0u8; BYTES_BUF_SIZE];
+
+    loop {
+        match reader.read(&mut buf) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => counts.bytes += n,
+        }
+    }
+
+    counts
+}
+
+pub fn print_counts(flags: &HashSet<Flag>, counts: &Counts) {
+    if flags.contains(&Flag::Lines) {
+        print!(" {:>7}", counts.lines);
+    }
+    if flags.contains(&Flag::Words) {
+        print!(" {:>7}", counts.words);
+    }
+    if flags.contains(&Flag::Bytes) {
+        print!(" {:>7}", counts.bytes);
+    }
+    if flags.contains(&Flag::Characters) {
+        print!(" {:>7}", counts.chars);
+    }
+}
+
+fn process_line(line: &mut String, num_bytes: usize, counts: &mut Counts, active: &ActiveFlags) {
+    if active.bytes {
+        counts.bytes += num_bytes;
+    }
+    if active.lines {
+        counts.lines += 1;
+    }
+    if active.words {
+        counts.words += line.split_whitespace().count();
+    }
+    if active.chars {
+        counts.chars += line.chars().count();
+    }
+    line.clear();
+}
+
+struct ActiveFlags {
+    bytes: bool,
+    lines: bool,
+    words: bool,
+    chars: bool,
+}
+
+impl ActiveFlags {
+    fn from(flags: &HashSet<Flag>) -> Self {
+        Self {
+            bytes: flags.contains(&Flag::Bytes),
+            lines: flags.contains(&Flag::Lines),
+            words: flags.contains(&Flag::Words),
+            chars: flags.contains(&Flag::Characters),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::arguments;
+
+    fn count_str(input: &str, flag_str: &str) -> Counts {
+        let args = flag_str.split_whitespace().map(String::from).collect();
+        let (flags, _) = arguments::parse_flags_and_filenames(args).unwrap();
+        count(&mut input.as_bytes(), &flags)
+    }
+
+    #[test]
+    fn default_flags_count_lines_words_bytes() {
+        let c = count_str("hello world\nfoo bar\n", "");
+        assert_eq!(c.lines, 2);
+        assert_eq!(c.words, 4);
+        assert_eq!(c.bytes, 20);
+    }
+
+    #[test]
+    fn flag_c_counts_bytes() {
+        assert_eq!(count_str("hello\n", "-c").bytes, 6);
+    }
+
+    #[test]
+    fn flag_l_counts_lines() {
+        assert_eq!(count_str("a\nb\nc\n", "-l").lines, 3);
+    }
+
+    #[test]
+    fn flag_w_counts_words() {
+        assert_eq!(count_str("one two three\n", "-w").words, 3);
+    }
+
+    #[test]
+    fn flag_m_counts_chars() {
+        assert_eq!(count_str("héllo\n", "-m").chars, 6); // 5 chars + newline
+    }
+
+    #[test]
+    fn empty_input() {
+        let c = count_str("", "");
+        assert_eq!(c.bytes, 0);
+        assert_eq!(c.lines, 0);
+        assert_eq!(c.words, 0);
+    }
+}
