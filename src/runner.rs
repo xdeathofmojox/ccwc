@@ -43,7 +43,7 @@ fn process_filepaths(flags: HashSet<Flag>, filepaths: Vec<String>) -> ExitCode {
 fn process_filepath(filepath: &str, flags: &HashSet<Flag>, status: &mut ExitCode) {
     match File::open(filepath) {
         Ok(file) => {
-            let counts = counter::count(&mut BufReader::new(file), flags);
+            let counts = counter::count(&mut BufReader::with_capacity(256 * 1024, file), flags);
             counter::print_counts(flags, &counts);
             println!(" {filepath}");
         }

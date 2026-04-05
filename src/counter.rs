@@ -1,7 +1,9 @@
 use std::collections::HashSet;
-use std::io::BufRead;
+use std::io::{BufRead, Read};
 
 use crate::flag::Flag;
+
+const BYTES_BUF_SIZE: usize = 64 * 1024;
 
 #[derive(Default)]
 pub struct Counts {
@@ -12,6 +14,11 @@ pub struct Counts {
 }
 
 pub fn count<R: BufRead>(reader: &mut R, flags: &HashSet<Flag>) -> Counts {
+    if flags.len() == 1 && flags.contains(&Flag::Bytes) {
+        return count_bytes_only(reader);
+    }
+
+    let active = ActiveFlags::from(flags);
     let mut counts = Counts::default();
     let mut line = String::new();
 
@@ -20,7 +27,21 @@ pub fn count<R: BufRead>(reader: &mut R, flags: &HashSet<Flag>) -> Counts {
             break;
         }
 
-        process_line(&mut line, num_bytes, &mut counts, flags);
+        process_line(&mut line, num_bytes, &mut counts, &active);
+    }
+
+    counts
+}
+
+fn count_bytes_only<R: Read>(reader: &mut R) -> Counts {
+    let mut counts = Counts::default();
+    let mut buf = [0u8; BYTES_BUF_SIZE];
+
+    loop {
+        match reader.read(&mut buf) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => counts.bytes += n,
+        }
     }
 
     counts
@@ -41,20 +62,38 @@ pub fn print_counts(flags: &HashSet<Flag>, counts: &Counts) {
     }
 }
 
-fn process_line(line: &mut String, num_bytes: usize, counts: &mut Counts, flags: &HashSet<Flag>) {
-    if flags.contains(&Flag::Bytes) {
+fn process_line(line: &mut String, num_bytes: usize, counts: &mut Counts, active: &ActiveFlags) {
+    if active.bytes {
         counts.bytes += num_bytes;
     }
-    if flags.contains(&Flag::Lines) {
+    if active.lines {
         counts.lines += 1;
     }
-    if flags.contains(&Flag::Words) {
+    if active.words {
         counts.words += line.split_whitespace().count();
     }
-    if flags.contains(&Flag::Characters) {
+    if active.chars {
         counts.chars += line.chars().count();
     }
     line.clear();
+}
+
+struct ActiveFlags {
+    bytes: bool,
+    lines: bool,
+    words: bool,
+    chars: bool,
+}
+
+impl ActiveFlags {
+    fn from(flags: &HashSet<Flag>) -> Self {
+        Self {
+            bytes: flags.contains(&Flag::Bytes),
+            lines: flags.contains(&Flag::Lines),
+            words: flags.contains(&Flag::Words),
+            chars: flags.contains(&Flag::Characters),
+        }
+    }
 }
 
 #[cfg(test)]
