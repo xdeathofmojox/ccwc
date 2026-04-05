@@ -1,2 +1,7 @@
 /target
 /data
+
+.direnv
+
+**/result
+**/result-dev
