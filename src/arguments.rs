@@ -1,5 +1,6 @@
-use crate::flag::Flag;
 use std::collections::HashSet;
+
+use crate::flag::Flag;
 
 pub fn parse_flags_and_filenames(
     mut args: Vec<String>,
