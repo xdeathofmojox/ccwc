@@ -63,7 +63,7 @@ mod tests {
 
     fn count_str(input: &str, flag_str: &str) -> Counts {
         let args = flag_str.split_whitespace().map(String::from).collect();
-        let (flags, _) = flags::parse(args).unwrap();
+        let (flags, _) = flags::parse_flags_and_filenames(args).unwrap();
         count(&mut input.as_bytes(), &flags)
     }
 

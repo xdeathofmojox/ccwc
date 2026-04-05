@@ -7,7 +7,7 @@ use crate::{counter, flags};
 
 pub fn run(args: Vec<String>) -> ExitCode {
     // Parse flags and filepaths, printing any errors encountered
-    let (flags, filepaths) = match flags::parse(args) {
+    let (flags, filepaths) = match flags::parse_flags_and_filenames(args) {
         Ok(result) => result,
         Err(e) => {
             eprintln!("{e}");
