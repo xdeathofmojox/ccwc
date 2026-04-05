@@ -3,11 +3,11 @@ use std::fs::File;
 use std::io::{self, BufReader};
 use std::process::ExitCode;
 
-use crate::{counter, flags};
+use crate::{arguments, counter, flag::Flag};
 
 pub fn run(args: Vec<String>) -> ExitCode {
     // Parse flags and filepaths, printing any errors encountered
-    let (flags, filepaths) = match flags::parse_flags_and_filenames(args) {
+    let (flags, filepaths) = match arguments::parse_flags_and_filenames(args) {
         Ok(result) => result,
         Err(e) => {
             eprintln!("{e}");
@@ -16,21 +16,21 @@ pub fn run(args: Vec<String>) -> ExitCode {
     };
 
     if filepaths.is_empty() {
-        process_stdin(&flags)
+        process_stdin(flags)
     } else {
         process_filepaths(flags, filepaths)
     }
 }
 
-fn process_stdin(flags: &HashSet<flags::Flag>) -> ExitCode {
+fn process_stdin(flags: HashSet<Flag>) -> ExitCode {
     let stdin = io::stdin();
-    let counts = counter::count(&mut stdin.lock(), flags);
-    counter::print_counts(flags, &counts);
+    let counts = counter::count(&mut stdin.lock(), &flags);
+    counter::print_counts(&flags, &counts);
     println!();
     ExitCode::SUCCESS
 }
 
-fn process_filepaths(flags: HashSet<flags::Flag>, filepaths: Vec<String>) -> ExitCode {
+fn process_filepaths(flags: HashSet<Flag>, filepaths: Vec<String>) -> ExitCode {
     let mut status = ExitCode::SUCCESS;
 
     for filepath in &filepaths {
@@ -40,7 +40,7 @@ fn process_filepaths(flags: HashSet<flags::Flag>, filepaths: Vec<String>) -> Exi
     status
 }
 
-fn process_filepath(filepath: &str, flags: &HashSet<flags::Flag>, status: &mut ExitCode) {
+fn process_filepath(filepath: &str, flags: &HashSet<Flag>, status: &mut ExitCode) {
     match File::open(filepath) {
         Ok(file) => {
             let counts = counter::count(&mut BufReader::new(file), flags);

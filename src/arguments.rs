@@ -1,12 +1,5 @@
+use crate::flag::Flag;
 use std::collections::HashSet;
-
-#[derive(PartialEq, Eq, Hash, Debug)]
-pub enum Flag {
-    Bytes,
-    Lines,
-    Words,
-    Characters,
-}
 
 pub fn parse_flags_and_filenames(
     mut args: Vec<String>,

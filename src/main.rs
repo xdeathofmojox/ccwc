@@ -1,5 +1,6 @@
+mod arguments;
 mod counter;
-mod flags;
+mod flag;
 mod runner;
 
 use std::process::ExitCode;

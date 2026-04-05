@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::io::BufRead;
 
-use crate::flags::Flag;
+use crate::flag::Flag;
 
 pub struct Counts {
     pub bytes: usize,
@@ -59,11 +59,11 @@ pub fn print_counts(flags: &HashSet<Flag>, counts: &Counts) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::flags;
+    use crate::arguments;
 
     fn count_str(input: &str, flag_str: &str) -> Counts {
         let args = flag_str.split_whitespace().map(String::from).collect();
-        let (flags, _) = flags::parse_flags_and_filenames(args).unwrap();
+        let (flags, _) = arguments::parse_flags_and_filenames(args).unwrap();
         count(&mut input.as_bytes(), &flags)
     }
 
