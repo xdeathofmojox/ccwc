@@ -1,13 +1,17 @@
 { ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    {
+      pkgs,
+      craneLib,
+      commonArgs,
+      cargoArtifacts,
+      ...
+    }:
     {
       packages = {
-        default = pkgs.ccwc;
-        inherit (pkgs)
-          ccwc
-          ;
+        default = craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
+        ccwc = craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
       };
       legacyPackages = pkgs;
     };
