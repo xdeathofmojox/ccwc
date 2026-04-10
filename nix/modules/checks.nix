@@ -10,6 +10,22 @@
     }:
     {
       checks = {
+        zig-test-cc-wc = pkgs.stdenv.mkDerivation {
+          name = "zig-test-cc-wc";
+          src = ../../zig/cc-wc;
+          nativeBuildInputs = [ pkgs.zig ];
+          buildPhase = "zig build test";
+          installPhase = "touch $out";
+        };
+
+        zig-test-cc-wc-core = pkgs.stdenv.mkDerivation {
+          name = "zig-test-cc-wc-core";
+          src = ../../zig/cc-wc-core;
+          nativeBuildInputs = [ pkgs.zig ];
+          buildPhase = "zig build test";
+          installPhase = "touch $out";
+        };
+
         clippy = craneLib.cargoClippy (
           commonArgs
           // {
