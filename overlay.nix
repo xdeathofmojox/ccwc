@@ -15,16 +15,6 @@ final: prev: rec {
     buildAndTestSubdir = "./crates/cc-wc-core";
   };
   # Zig packages
-  cc-wc-core-zig-version = {
-    major = "0";
-    minor = "2";
-    patch = "0";
-  };
   cc-wc-core-zig = final.callPackage ./zig/cc-wc-core { };
-  cc-wc-zig-version = {
-    major = "0";
-    minor = "2";
-    patch = "0";
-  };
   cc-wc-zig = final.callPackage ./zig/cc-wc { };
 }

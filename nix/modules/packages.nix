@@ -26,7 +26,6 @@
         );
         cc-wc-core-rust = craneLib.buildPackage (
           commonArgs
-          // craneLib.crateNameFromCargoToml { cargoToml = ./../../crates/cc-wc-core/Cargo.toml; }
           // {
             inherit cargoArtifacts;
             cargoExtraArgs = "-p cc-wc-core";

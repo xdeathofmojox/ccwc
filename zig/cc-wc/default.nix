@@ -1,12 +1,13 @@
-{
-  stdenv,
-  zig,
-  cc-wc-zig-version,
-}:
-
+{ stdenv, zig }:
+let
+  zonContent = builtins.readFile ./build.zig.zon;
+  zonFlat = builtins.replaceStrings [ "\n" ] [ " " ] zonContent;
+  versionMatch = builtins.match ''.*\.version = "([0-9]+\.[0-9]+\.[0-9]+)".*'' zonFlat;
+  version = builtins.head versionMatch;
+in
 stdenv.mkDerivation {
   pname = "cc-wc-zig";
-  version = "${cc-wc-zig-version.major}.${cc-wc-zig-version.minor}.${cc-wc-zig-version.patch}";
+  inherit version;
   src = ./.;
   meta = {
     description = "cc-wc executable (Zig)";

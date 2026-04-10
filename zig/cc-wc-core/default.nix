@@ -2,12 +2,16 @@
   lib,
   stdenv,
   zig,
-  cc-wc-core-zig-version,
 }:
-
+let
+  zonContent = builtins.readFile ./build.zig.zon;
+  zonFlat = builtins.replaceStrings [ "\n" ] [ " " ] zonContent;
+  versionMatch = builtins.match ''.*\.version = "([0-9]+\.[0-9]+\.[0-9]+)".*'' zonFlat;
+  version = builtins.head versionMatch;
+in
 stdenv.mkDerivation {
   pname = "cc-wc-core-zig";
-  version = "${cc-wc-core-zig-version.major}.${cc-wc-core-zig-version.minor}.${cc-wc-core-zig-version.patch}";
+  inherit version;
   src = ./.;
   meta = {
     description = "cc-wc core library (Zig)";
