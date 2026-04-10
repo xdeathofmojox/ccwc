@@ -1,0 +1,5 @@
+[package]
+name = "cc-wc-core"
+version.workspace = true
+edition = "2024"
+license.workspace = true
