@@ -6,11 +6,17 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const core_dep = b.dependency("cc_wc_core", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
+    mod.addImport("cc-wc-core", core_dep.module("cc-wc-core"));
 
     const exe = b.addExecutable(.{
         .name = exec_name,

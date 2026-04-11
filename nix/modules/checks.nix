@@ -14,6 +14,9 @@
           name = "zig-test-cc-wc";
           src = ../../zig/cc-wc;
           nativeBuildInputs = [ pkgs.zig ];
+          postUnpack = ''
+            cp -r ${../../zig/cc-wc-core} cc-wc-core
+          '';
           buildPhase = "zig build test";
           installPhase = "touch $out";
         };

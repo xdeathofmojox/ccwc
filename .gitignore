@@ -5,3 +5,11 @@
 
 **/result
 **/result-dev
+
+.zig-cache/
+zig-out/
+/release/
+/debug/
+/build/
+/build-*/
+/docgen_tmp/

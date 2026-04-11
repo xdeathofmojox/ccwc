@@ -1,4 +1,4 @@
-final: prev: rec {
+final: prev: {
   # Rust packages
   cc-wc-rust = final.rustPlatform.buildRustPackage {
     pname = (final.lib.importTOML ./Cargo.toml).workspace.metadata.crane.name;
@@ -16,5 +16,5 @@ final: prev: rec {
   };
   # Zig packages
   cc-wc-core-zig = final.callPackage ./zig/cc-wc-core { };
-  cc-wc-zig = final.callPackage ./zig/cc-wc { };
+  cc-wc-zig = final.callPackage ./zig/cc-wc { cc-wc-core-src = final.cc-wc-core-zig.src; };
 }

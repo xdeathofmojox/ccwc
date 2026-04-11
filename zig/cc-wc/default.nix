@@ -1,4 +1,8 @@
-{ stdenv, zig }:
+{
+  stdenv,
+  zig,
+  cc-wc-core-src,
+}:
 let
   zonContent = builtins.readFile ./build.zig.zon;
   zonFlat = builtins.replaceStrings [ "\n" ] [ " " ] zonContent;
@@ -16,4 +20,8 @@ stdenv.mkDerivation {
   nativeBuildInputs = [
     zig.hook
   ];
+
+  postUnpack = ''
+    cp -r ${cc-wc-core-src} cc-wc-core
+  '';
 }
