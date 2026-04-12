@@ -1,7 +1,7 @@
 const std = @import("std");
-const arguments = @import("arguments.zig");
-const counter = @import("counter.zig");
-const FlagSet = @import("flags.zig").FlagSet;
+const arguments = @import("cc-wc-core-internal").arguments;
+const counter = @import("cc-wc-core-internal").counter;
+const FlagSet = @import("cc-wc-core-internal").flags.FlagSet;
 
 pub fn run(allocator: std.mem.Allocator, args: []const []const u8) u8 {
     const parsed = arguments.parseFlagsAndFilenames(args) catch return 1;

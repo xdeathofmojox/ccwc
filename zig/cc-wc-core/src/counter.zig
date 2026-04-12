@@ -1,6 +1,6 @@
 const std = @import("std");
-const Flag = @import("flags.zig").Flag;
-const FlagSet = @import("flags.zig").FlagSet;
+const Flag = @import("cc-wc-core-internal").flags.Flag;
+const FlagSet = @import("cc-wc-core-internal").flags.FlagSet;
 
 const CHUNK_SIZE = 64 * 1024;
 

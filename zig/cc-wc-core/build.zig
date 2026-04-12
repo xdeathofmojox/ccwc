@@ -20,8 +20,18 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lib);
 
+    const lib_internal_name = "cc-wc-core-internal";
+    const lib_internal_module = b.addModule(lib_internal_name, .{
+        .root_source_file = b.path("src/root_internal.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    lib_internal_module.addImport(lib_internal_name, lib_internal_module);
+    lib.root_module.addImport(lib_internal_name, lib_internal_module);
+
     const lib_unit_tests = b.addTest(.{
-        .root_module = lib_module,
+        .root_module = lib_internal_module,
     });
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);

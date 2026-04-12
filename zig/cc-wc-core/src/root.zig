@@ -1,7 +1,4 @@
-const flags = @import("flags.zig");
-const arguments = @import("arguments.zig");
-const counter = @import("counter.zig");
-pub const runner = @import("runner.zig");
+pub const runner = @import("cc-wc-core-internal").runner;
 
 test {
     @import("std").testing.refAllDeclsRecursive(@This());
