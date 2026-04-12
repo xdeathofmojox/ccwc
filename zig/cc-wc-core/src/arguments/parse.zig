@@ -6,7 +6,8 @@ const Args = @import("cc-wc-core-internal").arguments.Args;
 pub fn parseFlagsAndFilenames(args: []const []const u8) error{IllegalOption}!Args {
     var first_file: usize = args.len;
     for (args, 0..) |arg, i| {
-        if (arg.len == 0 or arg[0] != '-') {
+        const stdin_as_file = std.mem.eql(u8, arg, "-");
+        if (arg.len == 0 or arg[0] != '-' or stdin_as_file) {
             first_file = i;
             break;
         }

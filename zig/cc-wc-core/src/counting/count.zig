@@ -1,28 +1,45 @@
 const std = @import("std");
 const Flag = @import("cc-wc-core-internal").flags.Flag;
 const FlagSet = @import("cc-wc-core-internal").flags.FlagSet;
+const CountData = @import("cc-wc-core-internal").counting.CountData;
 
-pub const Counts = struct {
-    bytes: usize = 0,
-    lines: usize = 0,
-    words: usize = 0,
-    chars: usize = 0,
+const ActiveFlags = struct {
+    bytes: bool,
+    lines: bool,
+    words: bool,
+    chars: bool,
+
+    fn fromFlags(flags: FlagSet) ActiveFlags {
+        return .{
+            .bytes = flags.contains(.bytes),
+            .lines = flags.contains(.lines),
+            .words = flags.contains(.words),
+            .chars = flags.contains(.characters),
+        };
+    }
 };
 
-pub fn count(reader: *std.Io.Reader, flags: FlagSet) !Counts {
+pub fn count(reader: *std.Io.Reader, flags: FlagSet) !CountData {
     if (flags.count() == 1 and flags.contains(.bytes)) {
         return countBytesOnly(reader);
     }
     return countWithLines(reader, flags);
 }
 
-fn countBytesOnly(reader: *std.Io.Reader) !Counts {
+pub fn printCounts(flags: FlagSet, counts: CountData, writer: *std.Io.Writer) void {
+    if (flags.contains(.lines)) writer.print(" {d:>7}", .{counts.lines}) catch {};
+    if (flags.contains(.words)) writer.print(" {d:>7}", .{counts.words}) catch {};
+    if (flags.contains(.bytes)) writer.print(" {d:>7}", .{counts.bytes}) catch {};
+    if (flags.contains(.characters)) writer.print(" {d:>7}", .{counts.chars}) catch {};
+}
+
+fn countBytesOnly(reader: *std.Io.Reader) !CountData {
     return .{ .bytes = try reader.discard(.unlimited) };
 }
 
-fn countWithLines(reader: *std.Io.Reader, flags: FlagSet) !Counts {
+fn countWithLines(reader: *std.Io.Reader, flags: FlagSet) !CountData {
     const active = ActiveFlags.fromFlags(flags);
-    var counts = Counts{};
+    var counts = CountData{};
 
     while (true) {
         const line_with_nl = reader.takeDelimiterInclusive('\n') catch |err| switch (err) {
@@ -40,7 +57,7 @@ fn countWithLines(reader: *std.Io.Reader, flags: FlagSet) !Counts {
     return counts;
 }
 
-fn processLine(line: []const u8, had_newline: bool, counts: *Counts, active: *const ActiveFlags) void {
+fn processLine(line: []const u8, had_newline: bool, counts: *CountData, active: *const ActiveFlags) void {
     if (active.bytes) {
         counts.bytes += line.len;
         if (had_newline) counts.bytes += 1;
@@ -64,32 +81,9 @@ fn processLine(line: []const u8, had_newline: bool, counts: *Counts, active: *co
     }
 }
 
-pub fn printCounts(flags: FlagSet, counts: Counts, writer: *std.Io.Writer) void {
-    if (flags.contains(.lines)) writer.print(" {d:>7}", .{counts.lines}) catch {};
-    if (flags.contains(.words)) writer.print(" {d:>7}", .{counts.words}) catch {};
-    if (flags.contains(.bytes)) writer.print(" {d:>7}", .{counts.bytes}) catch {};
-    if (flags.contains(.characters)) writer.print(" {d:>7}", .{counts.chars}) catch {};
-}
+const arguments = @import("cc-wc-core-internal").arguments;
 
-const ActiveFlags = struct {
-    bytes: bool,
-    lines: bool,
-    words: bool,
-    chars: bool,
-
-    fn fromFlags(flags: FlagSet) ActiveFlags {
-        return .{
-            .bytes = flags.contains(.bytes),
-            .lines = flags.contains(.lines),
-            .words = flags.contains(.words),
-            .chars = flags.contains(.characters),
-        };
-    }
-};
-
-const arguments = @import("arguments.zig");
-
-fn countStr(allocator: std.mem.Allocator, input: []const u8, flag_str: []const u8) !Counts {
+fn countStr(allocator: std.mem.Allocator, input: []const u8, flag_str: []const u8) !CountData {
     var args_list = std.ArrayList([]const u8){};
     defer args_list.deinit(allocator);
     var iter = std.mem.tokenizeAny(u8, flag_str, " \t");
