@@ -9,6 +9,6 @@ pub fn main() void {
     const args = std.process.argsAlloc(allocator) catch std.process.exit(1);
     defer std.process.argsFree(allocator, args);
 
-    const exit_code = cc_wc_core.runner.run(args[1..]);
+    const exit_code = cc_wc_core.execute(args[1..]);
     std.process.exit(exit_code);
 }

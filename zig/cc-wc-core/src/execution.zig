@@ -5,7 +5,7 @@ const FlagSet = @import("cc-wc-core-internal").flags.FlagSet;
 
 const READ_BUF_SIZE = 64 * 1024;
 
-pub fn run(args: []const []const u8) u8 {
+pub fn execute(args: []const []const u8) u8 {
     const parsed = arguments.parseFlagsAndFilenames(args) catch return 1;
 
     if (parsed.files.len == 0) {
