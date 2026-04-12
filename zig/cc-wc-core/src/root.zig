@@ -1,6 +1,8 @@
-const std = @import("std");
 const flag = @import("flag.zig");
+const arguments = @import("arguments.zig");
+const counter = @import("counter.zig");
+pub const runner = @import("runner.zig");
 
-// TODO: Implement cc-wc-core library in Zig
-pub const hello = "Hello from cc-wc-core!";
-pub const Flag = flag.Flag;
+test {
+    @import("std").testing.refAllDeclsRecursive(@This());
+}

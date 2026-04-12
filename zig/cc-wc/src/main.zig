@@ -1,24 +1,14 @@
 const std = @import("std");
 const cc_wc_core = @import("cc-wc-core");
 
-// TODO: Implement cc-wc executable in Zig
-pub fn main() !void {
+pub fn main() void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    // Use an iterator for memory efficiency
-    var iter = try std.process.argsWithAllocator(allocator);
-    defer iter.deinit();
+    const args = std.process.argsAlloc(allocator) catch std.process.exit(1);
+    defer std.process.argsFree(allocator, args);
 
-    var flags = std.AutoHashMap(cc_wc_core.Flag, void).init(allocator);
-    defer flags.deinit();
-    // The first argument is usually the executable path
-    while (iter.next()) |arg| {
-        std.debug.print("Arg: {s}\n", .{arg});
-        if (std.mem.eql(u8, arg, "-c")) {
-            try flags.put(cc_wc_core.Flag.characters, {});
-            std.debug.print("Flag set: characters\n", .{});
-        }
-    }
+    const exit_code = cc_wc_core.runner.run(allocator, args[1..]);
+    std.process.exit(exit_code);
 }
