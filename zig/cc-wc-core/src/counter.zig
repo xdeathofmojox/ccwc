@@ -1,5 +1,6 @@
 const std = @import("std");
-const Flag = @import("flag.zig").Flag;
+const Flag = @import("flags.zig").Flag;
+const FlagSet = @import("flags.zig").FlagSet;
 
 const CHUNK_SIZE = 64 * 1024;
 
@@ -10,7 +11,7 @@ pub const Counts = struct {
     chars: usize = 0,
 };
 
-pub fn count(allocator: std.mem.Allocator, reader: anytype, flags: std.EnumSet(Flag)) !Counts {
+pub fn count(allocator: std.mem.Allocator, reader: anytype, flags: FlagSet) !Counts {
     if (flags.count() == 1 and flags.contains(.bytes)) {
         return countBytesOnly(reader);
     }
@@ -28,7 +29,7 @@ fn countBytesOnly(reader: anytype) !Counts {
     return counts;
 }
 
-fn countWithLines(allocator: std.mem.Allocator, reader: anytype, flags: std.EnumSet(Flag)) !Counts {
+fn countWithLines(allocator: std.mem.Allocator, reader: anytype, flags: FlagSet) !Counts {
     const active = ActiveFlags.fromFlags(flags);
     var counts = Counts{};
 
@@ -87,7 +88,7 @@ fn processLine(line: []const u8, had_newline: bool, counts: *Counts, active: *co
     }
 }
 
-pub fn printCounts(flags: std.EnumSet(Flag), counts: Counts) void {
+pub fn printCounts(flags: FlagSet, counts: Counts) void {
     const stdout = std.fs.File.stdout().deprecatedWriter();
     if (flags.contains(.lines)) stdout.print(" {d:>7}", .{counts.lines}) catch {};
     if (flags.contains(.words)) stdout.print(" {d:>7}", .{counts.words}) catch {};
@@ -101,7 +102,7 @@ const ActiveFlags = struct {
     words: bool,
     chars: bool,
 
-    fn fromFlags(flags: std.EnumSet(Flag)) ActiveFlags {
+    fn fromFlags(flags: FlagSet) ActiveFlags {
         return .{
             .bytes = flags.contains(.bytes),
             .lines = flags.contains(.lines),

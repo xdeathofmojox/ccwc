@@ -1,7 +1,6 @@
 const std = @import("std");
-const Flag = @import("flag.zig").Flag;
-
-pub const FlagSet = std.EnumSet(Flag);
+const Flag = @import("flags.zig").Flag;
+const FlagSet = @import("flags.zig").FlagSet;
 
 pub const ParseResult = struct {
     flags: FlagSet,
@@ -61,6 +60,7 @@ test "empty args returns default flags" {
     try std.testing.expect(result.flags.contains(.bytes));
     try std.testing.expect(result.flags.contains(.lines));
     try std.testing.expect(result.flags.contains(.words));
+    try std.testing.expect(!result.flags.contains(.characters));
     try std.testing.expectEqual(@as(usize, 0), result.files.len);
 }
 
@@ -70,6 +70,7 @@ test "explicit flags override defaults" {
     try std.testing.expect(result.flags.contains(.lines));
     try std.testing.expect(!result.flags.contains(.bytes));
     try std.testing.expect(!result.flags.contains(.words));
+    try std.testing.expect(!result.flags.contains(.characters));
 }
 
 test "m flag replaces c flag" {
@@ -77,6 +78,8 @@ test "m flag replaces c flag" {
     const result = try parseFlagsAndFilenames(args);
     try std.testing.expect(result.flags.contains(.characters));
     try std.testing.expect(!result.flags.contains(.bytes));
+    try std.testing.expect(!result.flags.contains(.lines));
+    try std.testing.expect(!result.flags.contains(.words));
 }
 
 test "c flag replaces m flag" {
@@ -84,6 +87,8 @@ test "c flag replaces m flag" {
     const result = try parseFlagsAndFilenames(args);
     try std.testing.expect(result.flags.contains(.bytes));
     try std.testing.expect(!result.flags.contains(.characters));
+    try std.testing.expect(!result.flags.contains(.lines));
+    try std.testing.expect(!result.flags.contains(.words));
 }
 
 test "files collected after flags" {
