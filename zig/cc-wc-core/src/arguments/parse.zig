@@ -44,7 +44,10 @@ fn parseFlag(arg: []const u8, flags: *FlagSet) error{IllegalOption}!void {
                 flags.insert(.characters);
             },
             else => {
-                std.fs.File.stderr().deprecatedWriter().print("ccwc: illegal option -- {c}\n", .{c}) catch {};
+                var buf: [64]u8 = undefined;
+                var w = std.fs.File.Writer.initStreaming(std.fs.File.stderr(), &buf);
+                w.interface.print("ccwc: illegal option -- {c}\n", .{c}) catch {};
+                w.interface.flush() catch {};
                 return error.IllegalOption;
             },
         }

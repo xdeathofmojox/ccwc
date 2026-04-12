@@ -2,8 +2,6 @@ const std = @import("std");
 const Flag = @import("cc-wc-core-internal").flags.Flag;
 const FlagSet = @import("cc-wc-core-internal").flags.FlagSet;
 
-const CHUNK_SIZE = 64 * 1024;
-
 pub const Counts = struct {
     bytes: usize = 0,
     lines: usize = 0,
@@ -11,54 +9,32 @@ pub const Counts = struct {
     chars: usize = 0,
 };
 
-pub fn count(allocator: std.mem.Allocator, reader: anytype, flags: FlagSet) !Counts {
+pub fn count(reader: *std.Io.Reader, flags: FlagSet) !Counts {
     if (flags.count() == 1 and flags.contains(.bytes)) {
         return countBytesOnly(reader);
     }
-    return countWithLines(allocator, reader, flags);
+    return countWithLines(reader, flags);
 }
 
-fn countBytesOnly(reader: anytype) !Counts {
-    var counts = Counts{};
-    var buf: [CHUNK_SIZE]u8 = undefined;
-    while (true) {
-        const n = reader.read(&buf) catch break;
-        if (n == 0) break;
-        counts.bytes += n;
-    }
-    return counts;
+fn countBytesOnly(reader: *std.Io.Reader) !Counts {
+    return .{ .bytes = try reader.discard(.unlimited) };
 }
 
-fn countWithLines(allocator: std.mem.Allocator, reader: anytype, flags: FlagSet) !Counts {
+fn countWithLines(reader: *std.Io.Reader, flags: FlagSet) !Counts {
     const active = ActiveFlags.fromFlags(flags);
     var counts = Counts{};
 
-    // Line accumulation buffer for lines that span multiple chunks
-    var line_buf = std.ArrayList(u8){};
-    defer line_buf.deinit(allocator);
-
-    var chunk_buf: [CHUNK_SIZE]u8 = undefined;
     while (true) {
-        const n = reader.read(&chunk_buf) catch break;
-        if (n == 0) break;
-
-        var chunk = chunk_buf[0..n];
-        while (chunk.len > 0) {
-            if (std.mem.indexOfScalar(u8, chunk, '\n')) |nl| {
-                try line_buf.appendSlice(allocator, chunk[0..nl]);
-                processLine(line_buf.items, true, &counts, &active);
-                line_buf.clearRetainingCapacity();
-                chunk = chunk[nl + 1 ..];
-            } else {
-                try line_buf.appendSlice(allocator, chunk);
+        const line_with_nl = reader.takeDelimiterInclusive('\n') catch |err| switch (err) {
+            error.EndOfStream => {
+                const remaining = reader.buffered();
+                if (remaining.len > 0) processLine(remaining, false, &counts, &active);
                 break;
-            }
-        }
-    }
-
-    // Handle final line without trailing newline
-    if (line_buf.items.len > 0) {
-        processLine(line_buf.items, false, &counts, &active);
+            },
+            error.ReadFailed => return error.ReadFailed,
+            error.StreamTooLong => return error.StreamTooLong,
+        };
+        processLine(line_with_nl[0 .. line_with_nl.len - 1], true, &counts, &active);
     }
 
     return counts;
@@ -88,12 +64,11 @@ fn processLine(line: []const u8, had_newline: bool, counts: *Counts, active: *co
     }
 }
 
-pub fn printCounts(flags: FlagSet, counts: Counts) void {
-    const stdout = std.fs.File.stdout().deprecatedWriter();
-    if (flags.contains(.lines)) stdout.print(" {d:>7}", .{counts.lines}) catch {};
-    if (flags.contains(.words)) stdout.print(" {d:>7}", .{counts.words}) catch {};
-    if (flags.contains(.bytes)) stdout.print(" {d:>7}", .{counts.bytes}) catch {};
-    if (flags.contains(.characters)) stdout.print(" {d:>7}", .{counts.chars}) catch {};
+pub fn printCounts(flags: FlagSet, counts: Counts, writer: *std.Io.Writer) void {
+    if (flags.contains(.lines)) writer.print(" {d:>7}", .{counts.lines}) catch {};
+    if (flags.contains(.words)) writer.print(" {d:>7}", .{counts.words}) catch {};
+    if (flags.contains(.bytes)) writer.print(" {d:>7}", .{counts.bytes}) catch {};
+    if (flags.contains(.characters)) writer.print(" {d:>7}", .{counts.chars}) catch {};
 }
 
 const ActiveFlags = struct {
@@ -121,7 +96,10 @@ fn countStr(allocator: std.mem.Allocator, input: []const u8, flag_str: []const u
     while (iter.next()) |token| try args_list.append(allocator, token);
     const result = try arguments.parseFlagsAndFilenames(args_list.items);
     var fbs = std.io.fixedBufferStream(input);
-    return count(allocator, fbs.reader(), result.flags);
+    var gen_reader = fbs.reader();
+    var adapt_buf: [4096]u8 = undefined;
+    var adapted = gen_reader.adaptToNewApi(&adapt_buf);
+    return count(&adapted.new_interface, result.flags);
 }
 
 test "default flags count lines words bytes" {
