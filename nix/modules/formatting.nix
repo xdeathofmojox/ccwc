@@ -18,6 +18,7 @@
             enable = true;
             excludes = [ "**/Cargo.toml" ];
           };
+          zig.enable = true;
         };
 
         settings.global.excludes = [ ];

@@ -1,5 +1,13 @@
-[package]
+[workspace]
+members = [
+  "crates/cc-wc",
+  "crates/cc-wc-core"
+]
+resolver = "3"
+
+[workspace.metadata.crane]
 name = "cc-wc"
+
+[workspace.package]
 version = "0.2.0"
-edition = "2024"
 license = "MIT"

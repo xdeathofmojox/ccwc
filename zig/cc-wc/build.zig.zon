@@ -1,0 +1,16 @@
+.{
+    .name = .cc_wc,
+    .version = "0.2.0",
+    .fingerprint = 0xe2061433c417350a,
+    .minimum_zig_version = "0.14.0",
+    .dependencies = .{
+        .cc_wc_core = .{
+            .path = "../cc-wc-core",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
